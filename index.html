@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profit Calculator — Buy | Sell | GST</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #222632;
+      --border: #2e3345;
+      --text: #e4e6ef;
+      --text-dim: #8b90a5;
+      --accent: #6c5ce7;
+      --accent-light: #a29bfe;
+      --green: #00b894;
+      --green-dim: rgba(0, 184, 148, 0.12);
+      --red: #ff6b6b;
+      --red-dim: rgba(255, 107, 107, 0.12);
+      --orange: #fdcb6e;
+      --orange-dim: rgba(253, 203, 110, 0.12);
+      --blue: #74b9ff;
+      --blue-dim: rgba(116, 185, 255, 0.12);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* Background gradient blobs */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::before {
+      width: 600px; height: 600px;
+      background: var(--accent);
+      top: -200px; right: -100px;
+    }
+    body::after {
+      width: 500px; height: 500px;
+      background: var(--green);
+      bottom: -150px; left: -100px;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .header .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent-light);
+      background: rgba(108, 92, 231, 0.1);
+      border: 1px solid rgba(108, 92, 231, 0.2);
+      padding: 6px 16px;
+      border-radius: 100px;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .header h1 {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+    .header p {
+      color: var(--text-dim);
+      font-size: 16px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.3s ease;
+    }
+    .card:hover {
+      border-color: rgba(108, 92, 231, 0.3);
+    }
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+    .card-title .icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .card-title .icon.vendor {
+      background: var(--blue-dim);
+      color: var(--blue);
+    }
+    .card-title .icon.customer {
+      background: var(--green-dim);
+      color: var(--green);
+    }
+    .card-title .icon.gst {
+      background: var(--orange-dim);
+      color: var(--orange);
+    }
+
+    /* Form elements */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .form-row:last-child { margin-bottom: 0; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-wrapper .prefix,
+    .input-wrapper .suffix {
+      position: absolute;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-dim);
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+    .input-wrapper .prefix { left: 14px; }
+    .input-wrapper .suffix { right: 14px; }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      font-weight: 600;
+      background: var(--surface-2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"]:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.15);
+    }
+    .input-wrapper.padded .prefix + input {
+      padding-left: 34px;
+    }
+    .input-wrapper.padded .suffix + input,
+    .input-wrapper.padded input + .suffix {
+      /* suffix handled by right position */
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238b90a5' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+    select option {
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    /* GST Rate Buttons */
+    .gst-rates {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .gst-rate-btn {
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      background: var(--surface-2);
+      border: 2px solid var(--border);
+      border-radius: 100px;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .gst-rate-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .gst-rate-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(108, 92, 231, 0.4);
+    }
+
+    /* Summary / Results */
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .result-item {
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .result-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .result-item .result-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .result-item .result-value {
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .result-item .result-sub {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .result-item.profit { background: var(--green-dim); }
+    .result-item.profit .result-value { color: var(--green); }
+    .result-item.loss { background: var(--red-dim); }
+    .result-item.loss .result-value { color: var(--red); }
+    .result-item.gst-liability { background: var(--orange-dim); }
+    .result-item.gst-liability .result-value { color: var(--orange); }
+
+    /* Cash Flow Row */
+    .cashflow-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .cashflow-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .cashflow-card .cf-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .cashflow-card .cf-main {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .cashflow-card .cf-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .cashflow-card .cf-sub span {
+      font-weight: 600;
+    }
+    .cashflow-card.outflow { border-color: rgba(255,107,107,0.2); }
+    .cashflow-card.outflow .cf-main { color: var(--red); }
+    .cashflow-card.inflow { border-color: rgba(0,184,148,0.2); }
+    .cashflow-card.inflow .cf-main { color: var(--green); }
+    .cashflow-card.tax { border-color: rgba(253,203,110,0.2); }
+    .cashflow-card.tax .cf-main { color: var(--orange); }
+
+    /* Final Profit Banner */
+    .profit-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      transition: all 0.4s ease;
+    }
+    .profit-banner.positive {
+      border-color: rgba(0, 184, 148, 0.3);
+      background: linear-gradient(135deg, var(--surface) 0%, rgba(0, 184, 148, 0.05) 100%);
+    }
+    .profit-banner.negative {
+      border-color: rgba(255, 107, 107, 0.3);
+      background: linear-gradient(135deg, var(--surface) 0%, rgba(255, 107, 107, 0.05) 100%);
+    }
+    .profit-banner .banner-label {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .profit-banner .banner-value {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -2px;
+    }
+    .profit-banner.positive .banner-value { color: var(--green); }
+    .profit-banner.negative .banner-value { color: var(--red); }
+    .profit-banner .banner-margin {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+    .profit-banner .banner-margin span {
+      font-weight: 700;
+    }
+    .profit-banner .banner-formula {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    /* Breakdown Table */
+    .breakdown {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+    .breakdown-header {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 32px;
+      border-bottom: 1px solid rgba(46, 51, 69, 0.5);
+      transition: background 0.2s;
+    }
+    .breakdown-row:last-child { border-bottom: none; }
+    .breakdown-row:hover { background: rgba(108, 92, 231, 0.04); }
+    .breakdown-row .label {
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+    .breakdown-row .value {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .breakdown-row .value.green { color: var(--green); }
+    .breakdown-row .value.red { color: var(--red); }
+    .breakdown-row .value.orange { color: var(--orange); }
+    .breakdown-row.total {
+      background: var(--surface-2);
+      border-top: 2px solid var(--border);
+    }
+    .breakdown-row.total .label {
+      font-weight: 700;
+      color: var(--text);
+    }
+    .breakdown-row.total .value {
+      font-size: 18px;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+    .footer a {
+      color: var(--accent-light);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .container { padding: 24px 16px 40px; }
+      .header h1 { font-size: 28px; }
+      .card { padding: 24px; }
+      .form-row { grid-template-columns: 1fr; }
+      .results-grid { grid-template-columns: 1fr; }
+      .cashflow-row { grid-template-columns: 1fr; }
+      .profit-banner .banner-value { font-size: 36px; }
+      .gst-rates { gap: 6px; }
+      .gst-rate-btn { padding: 7px 14px; font-size: 12px; }
+      .breakdown-row { padding: 12px 20px; }
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in {
+      animation: fadeInUp 0.5s ease both;
+    }
+    .animate-in:nth-child(2) { animation-delay: 0.1s; }
+    .animate-in:nth-child(3) { animation-delay: 0.2s; }
+    .animate-in:nth-child(4) { animation-delay: 0.3s; }
+
+    /* Tooltip */
+    .info-tip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-dim);
+      cursor: help;
+      position: relative;
+    }
+    .info-tip:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: 120%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      z-index: 10;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .toggle-row .toggle-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      user-select: none;
+    }
+    .toggle-row .toggle-label.active {
+      color: var(--text);
+    }
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      border-radius: 100px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.3s;
+    }
+    .toggle input:checked + .toggle-track {
+      background: var(--green);
+    }
+    .toggle input:checked + .toggle-track::after {
+      transform: translateX(20px);
+    }
+    .toggle-hint {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header animate-in">
+      <div class="logo">📊 Profit Calculator</div>
+      <h1>Buy. Sell. Profit.</h1>
+      <p>Calculate your profit after factoring in purchase cost, selling price, and GST.</p>
+    </div>
+
+    <!-- Vendor / Purchase Card -->
+    <div class="card animate-in">
+      <div class="card-title">
+        <div class="icon vendor">🛒</div>
+        Purchase from Vendor
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label active" id="purchaseExclLabel">Price is excl. GST</span>
+        <label class="toggle">
+          <input type="checkbox" id="purchaseGSTIncl" onchange="onToggleChange('purchase'); calculate()">
+          <span class="toggle-track"></span>
+        </label>
+        <span class="toggle-label" id="purchaseInclLabel">Price is incl. GST</span>
+        <span class="toggle-hint" id="purchaseToggleHint">Enter base price</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="purchasePrice" id="purchasePriceLabel">Purchase Price (excl. GST)</label>
+          <div class="input-wrapper padded">
+            <span class="prefix">₹</span>
+            <input type="number" id="purchasePrice" placeholder="0.00" min="0" step="0.01" oninput="calculate()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="purchaseQty">Quantity</label>
+          <div class="input-wrapper">
+            <input type="number" id="purchaseQty" placeholder="1" min="1" step="1" value="1" oninput="calculate()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer / Selling Card -->
+    <div class="card animate-in">
+      <div class="card-title">
+        <div class="icon customer">💰</div>
+        Sale to Customer
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label active" id="sellingExclLabel">Price is excl. GST</span>
+        <label class="toggle">
+          <input type="checkbox" id="sellingGSTIncl" onchange="onToggleChange('selling'); calculate()">
+          <span class="toggle-track"></span>
+        </label>
+        <span class="toggle-label" id="sellingInclLabel">Price is incl. GST</span>
+        <span class="toggle-hint" id="sellingToggleHint">Enter base price</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="sellingPrice" id="sellingPriceLabel">Selling Price (excl. GST)</label>
+          <div class="input-wrapper padded">
+            <span class="prefix">₹</span>
+            <input type="number" id="sellingPrice" placeholder="0.00" min="0" step="0.01" oninput="calculate()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="sellingQty">Quantity</label>
+          <div class="input-wrapper">
+            <input type="number" id="sellingQty" placeholder="1" min="1" step="1" value="1" oninput="calculate()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GST Card -->
+    <div class="card animate-in">
+      <div class="card-title">
+        <div class="icon gst">🏛️</div>
+        GST Settings
+        <span class="info-tip" data-tip="You can claim Input Tax Credit (ITC) on purchase GST">?</span>
+      </div>
+      <label style="font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:block;">Quick Select GST Rate</label>
+      <div class="gst-rates" id="gstRates">
+        <button class="gst-rate-btn" onclick="setGST(0)">0%</button>
+        <button class="gst-rate-btn" onclick="setGST(5)">5%</button>
+        <button class="gst-rate-btn" onclick="setGST(12)">12%</button>
+        <button class="gst-rate-btn active" onclick="setGST(18)">18%</button>
+        <button class="gst-rate-btn" onclick="setGST(28)">28%</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="gstRate">GST Rate (%)</label>
+          <div class="input-wrapper padded">
+            <input type="number" id="gstRate" value="18" min="0" max="100" step="0.5" oninput="calculate(); updateActiveGST();">
+            <span class="suffix">%</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="gstLabel">Custom Label (optional)</label>
+          <div class="input-wrapper">
+            <input type="text" id="gstLabel" placeholder="e.g. IGST, GST" maxlength="40">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profit Banner -->
+    <div class="profit-banner positive animate-in" id="profitBanner">
+      <div class="banner-label">Profit After GST Liability</div>
+      <div class="banner-value" id="netProfit">₹0.00</div>
+      <div class="banner-margin" id="profitMargin">Margin: <span>0.00%</span></div>
+      <div class="banner-formula" id="profitFormula">= Total Received (incl. GST) - Total Paid (incl. GST) - GST Liability</div>
+    </div>
+
+    <!-- Cash Flow Summary -->
+    <div class="cashflow-row animate-in">
+      <div class="cashflow-card outflow">
+        <div class="cf-label">You Pay (Incl. GST)</div>
+        <div class="cf-main" id="cfPayTotal">₹0.00</div>
+        <div class="cf-sub"><span id="cfPayExcl">₹0</span> base + <span id="cfPayGST">₹0</span> GST</div>
+      </div>
+      <div class="cashflow-card inflow">
+        <div class="cf-label">You Receive (Incl. GST)</div>
+        <div class="cf-main" id="cfReceiveTotal">₹0.00</div>
+        <div class="cf-sub"><span id="cfReceiveExcl">₹0</span> base + <span id="cfReceiveGST">₹0</span> GST</div>
+      </div>
+      <div class="cashflow-card tax">
+        <div class="cf-label">GST Liability</div>
+        <div class="cf-main" id="cfGSTLiability">₹0.00</div>
+        <div class="cf-sub" id="cfGSTSub">Output - Input</div>
+      </div>
+    </div>
+
+    <!-- Results Grid -->
+    <div class="results-grid animate-in">
+      <div class="result-item" id="resultPurchaseTotal">
+        <div class="result-label">Purchase Cost (excl. GST)</div>
+        <div class="result-value" id="purchaseExclValue">₹0.00</div>
+        <div class="result-sub" id="purchaseInclSub">Incl. GST: ₹0.00</div>
+      </div>
+      <div class="result-item" id="resultSellingTotal">
+        <div class="result-label">Selling Revenue (excl. GST)</div>
+        <div class="result-value" id="sellingExclValue">₹0.00</div>
+        <div class="result-sub" id="sellingInclSub">Incl. GST: ₹0.00</div>
+      </div>
+      <div class="result-item gst-liability">
+        <div class="result-label">GST Payable to Govt</div>
+        <div class="result-value" id="gstLiabilityValue">₹0.00</div>
+        <div class="result-sub" id="gstLiabilitySub">Output GST - Input GST</div>
+      </div>
+      <div class="result-item" id="resultProfit">
+        <div class="result-label">Profit After GST</div>
+        <div class="result-value" id="grossProfitValue">₹0.00</div>
+        <div class="result-sub">After settling GST liability</div>
+      </div>
+    </div>
+
+    <!-- Detailed Breakdown -->
+    <div class="breakdown animate-in" id="breakdownTable">
+      <div class="breakdown-header">📋 Detailed Breakdown</div>
+
+      <!-- Purchase Section -->
+      <div class="breakdown-row">
+        <span class="label" style="font-weight:700;color:var(--text);">🛒 Purchase from Vendor</span>
+        <span class="value"></span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">Unit Price (excl. GST)</span>
+        <span class="value" id="bkPurchaseUnit">₹0.00</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">Quantity</span>
+        <span class="value" id="bkPurchaseQty">1</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">Total Purchase (excl. GST)</span>
+        <span class="value" id="bkPurchaseExcl">₹0.00</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">GST on Purchase (Input Tax Credit)</span>
+        <span class="value orange" id="bkPurchaseGST">₹0.00</span>
+      </div>
+      <div class="breakdown-row total">
+        <span class="label">Total Purchase (incl. GST)</span>
+        <span class="value red" id="bkPurchaseIncl">₹0.00</span>
+      </div>
+      <div style="height:8px;"></div>
+
+      <!-- Selling Section -->
+      <div class="breakdown-row">
+        <span class="label" style="font-weight:700;color:var(--text);">💰 Sale to Customer</span>
+        <span class="value"></span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">Unit Price (excl. GST)</span>
+        <span class="value" id="bkSellingUnit">₹0.00</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">Quantity</span>
+        <span class="value" id="bkSellingQty">1</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">Total Sale (excl. GST)</span>
+        <span class="value" id="bkSellingExcl">₹0.00</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">GST on Sale (Output Tax)</span>
+        <span class="value orange" id="bkSellingGST">₹0.00</span>
+      </div>
+      <div class="breakdown-row total">
+        <span class="label">Total Sale (incl. GST)</span>
+        <span class="value green" id="bkSellingIncl">₹0.00</span>
+      </div>
+      <div style="height:8px;"></div>
+
+      <!-- GST Settlement Section -->
+      <div class="breakdown-row">
+        <span class="label" style="font-weight:700;color:var(--text);">🏛️ GST Settlement</span>
+        <span class="value"></span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">Output GST (collected from customer)</span>
+        <span class="value orange" id="bkOutputGST">₹0.00</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">Input GST (paid to vendor)</span>
+        <span class="value orange" id="bkInputGST">₹0.00</span>
+      </div>
+      <div class="breakdown-row total">
+        <span class="label">Net GST Payable to Govt</span>
+        <span class="value orange" id="bkNetGST">₹0.00</span>
+      </div>
+      <div style="height:8px;"></div>
+
+      <!-- Final Summary -->
+      <div class="breakdown-row">
+        <span class="label" style="font-weight:700;color:var(--text);">📊 Final Summary</span>
+        <span class="value"></span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">Money In (from customer, incl. GST)</span>
+        <span class="value green" id="bkMoneyIn">₹0.00</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">Money Out (to vendor, incl. GST)</span>
+        <span class="value red" id="bkMoneyOut">₹0.00</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="label">GST Paid to Govt</span>
+        <span class="value orange" id="bkGSTPaid">₹0.00</span>
+      </div>
+      <div class="breakdown-row total">
+        <span class="label">💰 Profit After All Taxes</span>
+        <span class="value" id="bkFinalProfit">₹0.00</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      Built for quick profit calculations with GST · Prices in INR (₹)
+    </div>
+  </div>
+
+  <script>
+    function fmt(n) {
+      return '₹' + Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function setGST(rate) {
+      document.getElementById('gstRate').value = rate;
+      updateActiveGST();
+      calculate();
+    }
+
+    function updateActiveGST() {
+      const rate = parseFloat(document.getElementById('gstRate').value) || 0;
+      document.querySelectorAll('.gst-rate-btn').forEach(btn => {
+        const btnRate = parseFloat(btn.textContent);
+        btn.classList.toggle('active', btnRate === rate);
+      });
+    }
+
+    function onToggleChange(side) {
+      const isIncl = document.getElementById(side + 'GSTIncl').checked;
+      const exclLabel = document.getElementById(side + 'ExclLabel');
+      const inclLabel = document.getElementById(side + 'InclLabel');
+      const priceLabel = document.getElementById(side + 'PriceLabel');
+      const hint = document.getElementById(side + 'ToggleHint');
+
+      if (isIncl) {
+        exclLabel.classList.remove('active');
+        inclLabel.classList.add('active');
+        priceLabel.textContent = side === 'purchase' ? 'Purchase Price (incl. GST)' : 'Selling Price (incl. GST)';
+        hint.textContent = 'GST will be calculated backwards';
+      } else {
+        exclLabel.classList.add('active');
+        inclLabel.classList.remove('active');
+        priceLabel.textContent = side === 'purchase' ? 'Purchase Price (excl. GST)' : 'Selling Price (excl. GST)';
+        hint.textContent = 'Enter base price';
+      }
+    }
+
+    function calculate() {
+      const gstRate = parseFloat(document.getElementById('gstRate').value) || 0;
+      const gstFactor = gstRate / 100;
+      const purchaseQty = parseInt(document.getElementById('purchaseQty').value) || 1;
+      const sellingQty = parseInt(document.getElementById('sellingQty').value) || 1;
+      const purchaseInclMode = document.getElementById('purchaseGSTIncl').checked;
+      const sellingInclMode = document.getElementById('sellingGSTIncl').checked;
+
+      // Parse raw input
+      const rawPurchase = parseFloat(document.getElementById('purchasePrice').value) || 0;
+      const rawSelling = parseFloat(document.getElementById('sellingPrice').value) || 0;
+
+      // Compute excl / incl based on toggle mode
+      let purchaseExcl, purchaseGST, purchaseIncl;
+      if (purchaseInclMode) {
+        // User entered incl. GST price -> reverse calculate
+        purchaseIncl = rawPurchase * purchaseQty;
+        purchaseExcl = gstFactor > 0 ? purchaseIncl / (1 + gstFactor) : purchaseIncl;
+        purchaseGST = purchaseIncl - purchaseExcl;
+      } else {
+        // User entered excl. GST price -> normal calculation
+        purchaseExcl = rawPurchase * purchaseQty;
+        purchaseGST = purchaseExcl * gstFactor;
+        purchaseIncl = purchaseExcl + purchaseGST;
+      }
+
+      let sellingExcl, sellingGST, sellingIncl;
+      if (sellingInclMode) {
+        sellingIncl = rawSelling * sellingQty;
+        sellingExcl = gstFactor > 0 ? sellingIncl / (1 + gstFactor) : sellingIncl;
+        sellingGST = sellingIncl - sellingExcl;
+      } else {
+        sellingExcl = rawSelling * sellingQty;
+        sellingGST = sellingExcl * gstFactor;
+        sellingIncl = sellingExcl + sellingGST;
+      }
+
+      // GST Liability
+      const netGST = sellingGST - purchaseGST;
+
+      // Profit (after all taxes)
+      const profitAfterGST = sellingIncl - purchaseIncl - netGST;
+      const grossProfit = sellingExcl - purchaseExcl; // same as profitAfterGST
+
+      // Profit margin (%)
+      const margin = purchaseExcl > 0 ? ((profitAfterGST / purchaseExcl) * 100) : (sellingExcl > 0 ? Infinity : 0);
+
+      // Update banner
+      const banner = document.getElementById('profitBanner');
+      const netProfitEl = document.getElementById('netProfit');
+      const marginEl = document.getElementById('profitMargin');
+      const formulaEl = document.getElementById('profitFormula');
+
+      if (profitAfterGST >= 0) {
+        banner.className = 'profit-banner positive animate-in';
+        netProfitEl.textContent = '+' + fmt(profitAfterGST);
+      } else {
+        banner.className = 'profit-banner negative animate-in';
+        netProfitEl.textContent = '-' + fmt(profitAfterGST);
+      }
+      const marginText = !isFinite(margin) ? '\u221E' : margin.toFixed(2);
+      marginEl.innerHTML = 'Margin: <span>' + marginText + '%</span>';
+      formulaEl.textContent = '= ' + fmt(sellingIncl) + ' (received) - ' + fmt(purchaseIncl) + ' (paid) - ' + fmt(netGST) + ' (GST)';
+
+      // Cash flow cards
+      document.getElementById('cfPayTotal').textContent = fmt(purchaseIncl);
+      document.getElementById('cfPayExcl').textContent = fmt(purchaseExcl);
+      document.getElementById('cfPayGST').textContent = fmt(purchaseGST);
+      document.getElementById('cfReceiveTotal').textContent = fmt(sellingIncl);
+      document.getElementById('cfReceiveExcl').textContent = fmt(sellingExcl);
+      document.getElementById('cfReceiveGST').textContent = fmt(sellingGST);
+      document.getElementById('cfGSTLiability').textContent = fmt(netGST);
+      const gstLabel = document.getElementById('gstLabel').value || 'Net GST';
+      document.getElementById('cfGSTSub').textContent = netGST > 0
+        ? gstLabel + ' payable'
+        : netGST < 0
+        ? 'ITC surplus (carry fwd)'
+        : 'No GST payable';
+
+      // Result cards
+      document.getElementById('purchaseExclValue').textContent = fmt(purchaseExcl);
+      document.getElementById('purchaseInclSub').textContent = 'Incl. GST: ' + fmt(purchaseIncl);
+      document.getElementById('sellingExclValue').textContent = fmt(sellingExcl);
+      document.getElementById('sellingInclSub').textContent = 'Incl. GST: ' + fmt(sellingIncl);
+      document.getElementById('gstLiabilityValue').textContent = fmt(netGST);
+      document.getElementById('gstLiabilitySub').textContent = netGST > 0
+        ? gstLabel + ' payable to govt'
+        : netGST < 0
+        ? 'ITC surplus (carry forward)'
+        : 'No GST payable';
+
+      document.getElementById('grossProfitValue').textContent = fmt(profitAfterGST);
+      const profitCard = document.getElementById('resultProfit');
+      if (profitAfterGST >= 0) {
+        profitCard.className = 'result-item profit';
+        document.getElementById('grossProfitValue').style.color = 'var(--green)';
+      } else {
+        profitCard.className = 'result-item loss';
+        document.getElementById('grossProfitValue').style.color = 'var(--red)';
+      }
+
+      // Breakdown
+      document.getElementById('bkPurchaseUnit').textContent = fmt(purchaseExcl > 0 ? purchaseExcl / purchaseQty : 0);
+      document.getElementById('bkPurchaseQty').textContent = purchaseQty;
+      document.getElementById('bkPurchaseExcl').textContent = fmt(purchaseExcl);
+      document.getElementById('bkPurchaseGST').textContent = fmt(purchaseGST);
+      document.getElementById('bkPurchaseIncl').textContent = fmt(purchaseIncl);
+
+      document.getElementById('bkSellingUnit').textContent = fmt(sellingExcl > 0 ? sellingExcl / sellingQty : 0);
+      document.getElementById('bkSellingQty').textContent = sellingQty;
+      document.getElementById('bkSellingExcl').textContent = fmt(sellingExcl);
+      document.getElementById('bkSellingGST').textContent = fmt(sellingGST);
+      document.getElementById('bkSellingIncl').textContent = fmt(sellingIncl);
+
+      document.getElementById('bkOutputGST').textContent = fmt(sellingGST);
+      document.getElementById('bkInputGST').textContent = fmt(purchaseGST);
+      document.getElementById('bkNetGST').textContent = fmt(netGST);
+
+      // Final Summary
+      document.getElementById('bkMoneyIn').textContent = fmt(sellingIncl);
+      document.getElementById('bkMoneyOut').textContent = fmt(purchaseIncl);
+      document.getElementById('bkGSTPaid').textContent = fmt(netGST);
+      const bkFinal = document.getElementById('bkFinalProfit');
+      bkFinal.textContent = fmt(profitAfterGST);
+      bkFinal.style.color = profitAfterGST >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+
+    // Init
+    calculate();
+  </script>
+</body>
+</html>
