@@ -382,8 +382,8 @@
       <div style="height:8px;"></div>
 
       <div class="breakdown-row"><span class="label" style="font-weight:700;color:var(--text);">📊 Final Summary</span><span class="value"></span></div>
-      <div class="breakdown-row"><span class="label">Money In (from customer, incl. GST)</span><span class="value green" id="bkMoneyIn">₹0.00</span></div>
-      <div class="breakdown-row"><span class="label">Money Out (to vendor, incl. GST)</span><span class="value red" id="bkMoneyOut">₹0.00</span></div>
+      <div class="breakdown-row"><span class="label">Money In (from customer, excl. GST)</span><span class="value green" id="bkMoneyIn">₹0.00</span></div>
+      <div class="breakdown-row"><span class="label">Money Out (to vendor, excl. GST)</span><span class="value red" id="bkMoneyOut">₹0.00</span></div>
       <div class="breakdown-row"><span class="label">GST Paid to Govt</span><span class="value orange" id="bkGSTPaid">₹0.00</span></div>
       <div class="breakdown-row total"><span class="label">💰 Profit After All Taxes</span><span class="value" id="bkFinalProfit">₹0.00</span></div>
     </div>
@@ -508,7 +508,7 @@
       }
 
       const netGST = sellingGST - purchaseGST;
-      const profitAfterGST = sellingIncl - purchaseIncl - netGST;
+      const profitAfterGST = (sellingExcl - purchaseExcl) - netGST;
       const margin = purchaseExcl > 0 ? ((profitAfterGST / purchaseExcl) * 100) : (sellingExcl > 0 ? Infinity : 0);
 
       // Show/hide CGST+SGST rows
@@ -538,7 +538,7 @@
       else { banner.className = 'profit-banner negative animate-in'; netProfitEl.textContent = '-' + fmt(profitAfterGST); }
       const marginText = !isFinite(margin) ? '\u221E' : margin.toFixed(2);
       document.getElementById('profitMargin').innerHTML = 'Margin: <span>' + marginText + '%</span>';
-      document.getElementById('profitFormula').textContent = '= ' + fmt(sellingIncl) + ' (received) - ' + fmt(purchaseIncl) + ' (paid) - ' + fmt(netGST) + ' (GST)';
+      document.getElementById('profitFormula').textContent = '= ' + fmt(sellingExcl) + ' (selling) - ' + fmt(purchaseExcl) + ' (purchase) - ' + fmt(netGST) + ' (GST difference)';
 
       // Cash flow
       document.getElementById('cfPayTotal').textContent = fmt(purchaseIncl);
@@ -577,8 +577,8 @@
       document.getElementById('bkOutputGST').textContent = fmt(sellingGST);
       document.getElementById('bkInputGST').textContent = fmt(purchaseGST);
       document.getElementById('bkNetGST').textContent = fmt(netGST);
-      document.getElementById('bkMoneyIn').textContent = fmt(sellingIncl);
-      document.getElementById('bkMoneyOut').textContent = fmt(purchaseIncl);
+      document.getElementById('bkMoneyIn').textContent = fmt(sellingExcl);
+      document.getElementById('bkMoneyOut').textContent = fmt(purchaseExcl);
       document.getElementById('bkGSTPaid').textContent = fmt(netGST);
       const bkFinal = document.getElementById('bkFinalProfit');
       bkFinal.textContent = fmt(profitAfterGST);
@@ -620,7 +620,7 @@
         sellingIncl = sellingExcl + sellingGST;
       }
       const netGST = sellingGST - purchaseGST;
-      const profit = sellingExcl - purchaseExcl;
+      const profit = (sellingExcl - purchaseExcl) - netGST;
 
       const entry = {
         id: Date.now(),
@@ -694,12 +694,33 @@
       const sellingQty = parseInt(document.getElementById('sellingQty').value) || 1;
       const rawPurchase = parseFloat(document.getElementById('purchasePrice').value) || 0;
       const rawSelling = parseFloat(document.getElementById('sellingPrice').value) || 0;
-      const purchaseExcl = rawPurchase * purchaseQty;
-      const sellingExcl = rawSelling * sellingQty;
-      const purchaseGST = purchaseExcl * gstFactor;
-      const sellingGST = sellingExcl * gstFactor;
+      const purchaseInclMode = document.getElementById('purchaseGSTIncl').checked;
+      const sellingInclMode = document.getElementById('sellingGSTIncl').checked;
+
+      let purchaseExcl, purchaseGST, purchaseIncl;
+      if (purchaseInclMode) {
+        purchaseIncl = rawPurchase * purchaseQty;
+        purchaseExcl = gstFactor > 0 ? purchaseIncl / (1 + gstFactor) : purchaseIncl;
+        purchaseGST = purchaseIncl - purchaseExcl;
+      } else {
+        purchaseExcl = rawPurchase * purchaseQty;
+        purchaseGST = purchaseExcl * gstFactor;
+        purchaseIncl = purchaseExcl + purchaseGST;
+      }
+
+      let sellingExcl, sellingGST, sellingIncl;
+      if (sellingInclMode) {
+        sellingIncl = rawSelling * sellingQty;
+        sellingExcl = gstFactor > 0 ? sellingIncl / (1 + gstFactor) : sellingIncl;
+        sellingGST = sellingIncl - sellingExcl;
+      } else {
+        sellingExcl = rawSelling * sellingQty;
+        sellingGST = sellingExcl * gstFactor;
+        sellingIncl = sellingExcl + sellingGST;
+      }
+
       const netGST = sellingGST - purchaseGST;
-      const profit = sellingExcl - purchaseExcl;
+      const profit = (sellingExcl - purchaseExcl) - netGST;
 
       const now = new Date();
       const dateStr = now.toLocaleString('en-IN');
@@ -721,7 +742,7 @@
       txt += '  ┌' + '─'.repeat(w - 2) + '┐\n';
       txt += '  │' + center('PURCHASE FROM VENDOR', w - 2) + '│\n';
       txt += '  ├' + '─'.repeat(w - 2) + '┤\n';
-      txt += '  │  Unit Price (excl. GST):    ' + pad(rawPurchase) + '│\n';
+      txt += '  │  Unit Price (' + (purchaseInclMode ? 'incl.' : 'excl.') + ' GST):    ' + pad(rawPurchase) + '│\n';
       txt += '  │  Quantity:                  ' + pad(purchaseQty) + '│\n';
       txt += '  │  Total (excl. GST):         ' + pad(purchaseExcl) + '│\n';
       if (gstMode === 'cgstsgst') {
@@ -737,7 +758,7 @@
       txt += '  ┌' + '─'.repeat(w - 2) + '┐\n';
       txt += '  │' + center('SALE TO CUSTOMER', w - 2) + '│\n';
       txt += '  ├' + '─'.repeat(w - 2) + '┤\n';
-      txt += '  │  Unit Price (excl. GST):    ' + pad(rawSelling) + '│\n';
+      txt += '  │  Unit Price (' + (sellingInclMode ? 'incl.' : 'excl.') + ' GST):    ' + pad(rawSelling) + '│\n';
       txt += '  │  Quantity:                  ' + pad(sellingQty) + '│\n';
       txt += '  │  Total (excl. GST):         ' + pad(sellingExcl) + '│\n';
       if (gstMode === 'cgstsgst') {
